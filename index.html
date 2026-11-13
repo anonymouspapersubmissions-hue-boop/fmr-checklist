@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A Checklist for Foundation Model Research</title>
+<meta name="description" content="A checklist for authors and reviewers of foundation model research: which approximation strategies does the experiment use, and does the paper discuss the validity threats that come with them?">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #ffffff; --fg: #1d1d1f; --muted: #66676d; --line: #e4e4e7; --soft: #f6f6f8;
+    --accent: #1f4e79; --yes: #2e7d32; --no: #c62828; --na: #8a8f98; --new: #d6177f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #141416; --fg: #e9e9ec; --muted: #9b9ba3; --line: #2d2d33; --soft: #1c1c21;
+            --accent: #8ab4f8; --yes: #7ccc80; --no: #ef7070; --na: #a0a5ad; --new: #ff5fb0;
+            }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 17px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .app { max-width: 680px; margin: 0 auto; min-height: 100%; padding: 20px 16px 0; display: flex; flex-direction: column; }
+  .top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: .9rem; color: var(--muted); }
+  .top .brand { font-weight: 600; color: var(--fg); }
+  .top .right { display: flex; gap: 14px; align-items: baseline; white-space: nowrap; }
+  .top button.link, .top a.link { background: none; border: 0; padding: 0; font-size: .9rem; color: var(--muted); text-decoration: underline; cursor: pointer; }
+  .bar { height: 4px; background: var(--line); border-radius: 2px; margin: 8px 0 24px; overflow: hidden; }
+  .bar > div { height: 100%; background: var(--accent); width: 0; transition: width .25s; }
+  .screen { flex: 1; }
+  .kicker { font-size: .85rem; letter-spacing: .02em; text-transform: uppercase; color: var(--accent); margin: 0 0 6px; }
+  h1 { font-size: 1.6rem; line-height: 1.2; margin: 0 0 12px; }
+  h2 { font-size: 1.35rem; line-height: 1.3; margin: 0 0 12px; }
+  h3 { font-size: 1.05rem; margin: 16px 0 6px; }
+  h4 { font-size: 1rem; margin: 16px 0 4px; }
+  /* The overview: three sections, with the research strategies one level below. */
+  .about h3 { font-size: 1.2rem; line-height: 1.3; margin: 28px 0 8px; }
+  .about h3 + h4 { margin-top: 10px; }
+  p { margin: 8px 0; }
+  a { color: var(--accent); }
+  .muted { color: var(--muted); }
+  .new { color: var(--new); }
+  ul { padding-left: 20px; margin: 6px 0; }
+  li { margin: 4px 0; }
+  ul.guide { color: var(--muted); font-size: .95rem; margin: 12px 0; }
+  .example { color: var(--muted); margin: 6px 0; }
+  .answer { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 6px; }
+  .answer label { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 8px;
+                  padding: 8px 14px; cursor: pointer; background: var(--soft); }
+  .answer label:has(input:checked) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .answer input { margin: 0; }
+  .threat .answer label { background: var(--bg); }
+  textarea { width: 100%; font: inherit; color: inherit; background: var(--bg); resize: vertical;
+             border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  label.field { display: block; margin: 12px 0; }
+  label.field > span { display: block; font-size: .92rem; color: var(--muted); margin-bottom: 4px; }
+  .note { border-left: 3px solid var(--line); padding-left: 12px; color: var(--muted); font-size: .95rem; margin: 12px 0; }
+  .sub { margin-top: 22px; padding-top: 12px; border-top: 1px solid var(--line); }
+  /* Page 9: the cards carry the question as their title. */
+  .threat h3.q { font-size: 1.1rem; line-height: 1.35; }
+  .threat { background: var(--soft); border-radius: 10px; padding: 12px 14px; margin: 10px 0; }
+  .threat h3 { margin: 0 0 6px; }
+  /* Sticks to the bottom of the window, so that Back and Next are reachable without scrolling. */
+  /* The bar ends at the window edge on every page: no padding below it in the page, its own padding inside. */
+  .nav { position: sticky; bottom: 0; z-index: 5; background: var(--bg); display: flex; justify-content: space-between; align-items: center; gap: 12px;
+         margin: 28px -16px 0; padding: 12px 16px 20px; border-top: 1px solid var(--line); }
+  button { font: inherit; font-size: .95rem; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--line);
+           background: var(--soft); color: var(--fg); cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  @media (prefers-color-scheme: dark) { button.primary { color: #141416; } }
+  button:disabled { opacity: .4; cursor: default; }
+  /* The summary box, after the "Checklist Summary from the Perspective of a Reviewer" of the paper. */
+  :root { --vc-yes: #2e7d32; --vc-partly: #d98c00; --vc-no: #c62828; --vc-na: #8a8f98; --vc-used: #2f5daa; --vc-unused: #9aa1ab; }
+  @media (prefers-color-scheme: dark) { :root { --vc-yes: #7ccc80; --vc-partly: #f0b24a; --vc-no: #ef7070; --vc-na: #a0a5ad; --vc-used: #8ab4f8; --vc-unused: #8d939c; } }
+  .box { border: 1.5px solid var(--accent); border-radius: 5px; margin: 12px 0 16px; font-size: .95rem; overflow: hidden; }
+  .box .title { background: var(--accent); color: #fff; font-weight: 700; padding: 8px 12px; }
+  @media (prefers-color-scheme: dark) { .box .title { color: #141416; } }
+  .box .body { padding: 8px 12px 10px; }
+  .box .rq { margin: 6px 0; }
+  .box .rq b { color: var(--accent); margin-right: 8px; }
+  .box .h { color: var(--accent); font-weight: 700; margin: 14px 0 4px; }
+  .box .row { display: grid; grid-template-columns: 2.2em minmax(9em, 12em) auto; gap: 4px 10px; align-items: baseline; padding: 3px 0; }
+  .box .id { color: var(--muted); }
+  .box .name button { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+  .box .name button:hover { color: var(--accent); text-decoration: underline; }
+  .box .rownote { margin: -2px 0 8px 2.2em; padding-left: 10px; color: var(--muted); }
+  .box .block { font-weight: 700; margin: 12px 0 2px; }
+  .box .block button, .box .qn button { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+  .box .block button:hover, .box .qn button:hover { color: var(--accent); text-decoration: underline; }
+  .box .qa { margin: 4px 0 8px 1.2em; }
+  .box .qq { color: var(--muted); font-size: .9rem; }
+  .box .ans { white-space: pre-wrap; }
+  /* The glossary page. */
+  dl.glossary dt { font-weight: 700; margin-top: 14px; }
+  dl.glossary dd { margin: 2px 0 0; }
+  .vc { font-weight: 700; white-space: nowrap; }
+  .vc.Yes { color: var(--vc-yes); } .vc.Partly { color: var(--vc-partly); } .vc.No { color: var(--vc-no); } .vc.NA { color: var(--vc-na); }
+  .vc.used { color: var(--vc-used); } .vc.unused { color: var(--vc-unused); } .vc.none { color: var(--muted); font-weight: 400; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+  .msg { color: var(--muted); font-size: .92rem; min-height: 1.4em; }
+  .term { text-decoration: underline dotted; text-decoration-color: var(--accent); text-underline-offset: 3px; cursor: help; }
+  #tip { position: absolute; z-index: 10; background: var(--fg); color: var(--bg); padding: 8px 10px; border-radius: 8px;
+         font-size: .9rem; line-height: 1.4; box-shadow: 0 4px 16px rgba(0,0,0,.25); pointer-events: none; }
+  @media print { .term { text-decoration: none; } #tip { display: none; } }
+  @media print { .nav, .top, .bar, .toolbar, button, .msg { display: none !important; } .box .name button, .box .block button, .box .qn button { display: inline !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><span class="brand">A Checklist for Foundation Model Research</span><span class="right"><span id="progress-label"></span><a class="link" href="?glossary" target="_blank" rel="noopener" title="All terms of the checklist, in a new tab">Glossary</a><button type="button" class="link" id="reset-top" title="Clear all answers and start on page 1">Start over</button></span></div>
+  <div class="bar"><div id="progress-bar"></div></div>
+  <div class="screen" id="screen"></div>
+  <div class="nav">
+    <button type="button" id="back">Back</button>
+    <span class="msg" id="msg"></span>
+    <button type="button" class="primary" id="next">Next</button>
+  </div>
+</div>
+<div id="tip" role="tooltip" hidden></div>
+
+<script src="content.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ------------------------------------------------------------------
+  // Content: all texts come from content.js (CONTENT). This file only renders
+  // them.
+  // ------------------------------------------------------------------
+  const INTRO = CONTENT.intro, ABOUT = CONTENT.about, GLOSSARY_PAGE = CONTENT.glossaryPage, A1 = CONTENT.A1, QUESTIONS_A = CONTENT.questions, VALIDITY = CONTENT.validity,
+        THREATS = CONTENT.threats, SV_PAGE = CONTENT.statistical, OTHER = CONTENT.other, SUMMARY = CONTENT.summary,
+        GLOSSARY = CONTENT.glossary, TERM_PATTERNS = CONTENT.terms;
+  const QUESTIONS = Object.keys(QUESTIONS_A); // the Yes/No questions on the strategies (A2 ... A8); A1 comes first, SV and OT last
+  const PART_B = ['SV', 'IV', 'EV', 'CV'];
+  const BOX_A = SUMMARY.strategies;
+  const TERM_RE = new RegExp('\\b(?:' + TERM_PATTERNS.map((t, i) => '(?<t' + i + '>' + t[1] + ')').join('|') + ')\\b', 'gi');
+  let seenTerms = new Set();
+  function wrapTerms(html, exclude) {
+    // Marks the first occurrence of each term on the current screen; skips text inside tags
+    // and the terms in exclude (which a guideline defines itself).
+    return html.split(/(<[^>]+>)/).map((part) => {
+      if (part.startsWith('<')) return part;
+      return part.replace(TERM_RE, (m, ...rest) => {
+        const groups = rest[rest.length - 1];
+        const i = Object.keys(groups).findIndex((k) => groups[k] !== undefined);
+        const key = TERM_PATTERNS[i][0];
+        if (!GLOSSARY[key] || seenTerms.has(key) || (exclude && exclude.includes(key))) return m; // no entry: no underline
+        seenTerms.add(key);
+        return '<span class="term" tabindex="0" data-term="' + key + '">' + m + '</span>';
+      });
+    }).join('');
+  }
+  // [[words]] in a text are new wording to review, shown in pink.
+  const marks = (html) => html.replace(/\[\[(.+?)\]\]/g, '<span class="new">$1</span>');
+  const plain = (text) => String(text).replace(/\[\[(.+?)\]\]/g, '$1');
+  const T = (text, exclude) => wrapTerms(marks(esc(text)), exclude);
+  // Terms that the current screen defines itself get no tooltip there.
+  const defined = (keys) => (keys || []).forEach((k) => seenTerms.add(k));
+  const lc = (name) => (/^[A-Z]{2,}/.test(name) ? name : name.charAt(0).toLowerCase() + name.slice(1));
+
+  // ------------------------------------------------------------------
+  // State
+  // ------------------------------------------------------------------
+  const STORAGE_KEY = 'fmr-checklist-v7';
+  const state = { step: 'intro' };
+  const $ = (sel, root) => (root || document).querySelector(sel);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* unavailable */ } }
+  function load() { try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) Object.assign(state, JSON.parse(raw)); } catch (e) { /* ignore */ } }
+  const val = (k) => state[k] || '';
+
+  // ------------------------------------------------------------------
+  // Steps: the research question, then the Yes/No questions, one page each;
+  // a Yes unfolds the threats it raises. Then statistical validity, other
+  // threats, and the summary.
+  // ------------------------------------------------------------------
+  const ORDER = ['A1'].concat(QUESTIONS, ['SV', 'OT']);
+  // The first page, the overview, the ten pages of the checklist, the summary.
+  function steps() {
+    return [{ id: 'intro' }, { id: 'about' }].concat(ORDER.map((id) => ({ id: id })), [{ id: 'summary' }]);
+  }
+  function currentIndex(list) {
+    let i = list.findIndex((s) => s.id === state.step);
+    if (i < 0) { i = Math.min(state.stepIndex || 0, list.length - 1); state.step = list[i].id; }
+    return i;
+  }
+  // The threats a Yes to one question raises, in the order of the paper's table.
+  function threatsFor(a) { return THREATS.filter((t) => t.page === a); }
+  // Whether the box of a threat is open: no gate, or the gate answered with the
+  // answer that opens the box (Yes, or No for items with boxOn: 'No').
+  const opensOn = (t) => t.boxOn || 'Yes';
+  function isOpen(t) { return !t.gate || val('gate:' + t.id) === opensOn(t); }
+
+  // ------------------------------------------------------------------
+  // Screens
+  // ------------------------------------------------------------------
+  function radios(name, options) {
+    return '<div class="answer">' + options.map((o) =>
+      '<label><input type="radio" name="' + name + '" value="' + o + '"' + (val(name) === o ? ' checked' : '') + '> ' + esc(o) + '</label>').join('') + '</div>';
+  }
+  function textarea(name, label, rows) {
+    return '<label class="field"><span>' + T(label) + '</span><textarea name="' + name + '" rows="' + (rows || 3) + '">' + esc(val(name)) + '</textarea></label>';
+  }
+  function pageHead(id, title) {
+    const n = ORDER.indexOf(id) + 1;
+    return '<p class="kicker">Page ' + n + ' of ' + ORDER.length + '</p><h2>' + n + '. ' + esc(title) + '</h2>';
+  }
+  // Guidelines: plain texts, or { text, defines } for a text that defines a term (not underlined there).
+  function guide(items) { return '<ul class="guide">' + items.map((g) => '<li>' + (g.text ? T(g.text, g.defines) : T(g)) + '</li>').join('') + '</ul>'; }
+  function example(text) { return '<p class="example"><strong>Example:</strong> ' + T(text) + '</p>'; }
+  function boxFor(t) { return t.box || ('How does the paper address ' + (t.ask || lc(t.name)) + '?'); }
+  function threatCard(t, n) {
+    defined(t.defines);
+    let html = '<div class="threat"><h3>' + n + '. ' + esc(t.name) + '</h3>';
+    t.items.forEach((it) => { html += '<p>' + T(it.text) + '</p>' + (it.example ? example(it.example) : ''); });
+    if (t.gate) html += (t.gate === true ? '' : '<p>' + T(t.gate) + '</p>') + radios('gate:' + t.id, ['Yes', 'No']);
+    if (isOpen(t)) html += textarea('note:' + t.id, boxFor(t), 2);
+    return html + '</div>';
+  }
+  // Page 9: cards like on the pages before, but with the Yes/No question as
+  // the title (the item's question, or else its first text), the explanation
+  // and example below, Yes/No, and the box after the answer that opens it.
+  function questionBlock(t, n) {
+    defined(t.defines);
+    const first = t.items[0], rest = t.items.slice(1);
+    let html = '<div class="threat"><h3 class="q">' + n + '. ' + T(t.question || first.text) + '</h3>' + (t.question ? '<p>' + T(first.text) + '</p>' : '') +
+      (first.example ? example(first.example) : '');
+    rest.forEach((it) => { html += '<p>' + T(it.text) + '</p>' + (it.example ? example(it.example) : ''); });
+    html += radios('gate:' + t.id, ['Yes', 'No']);
+    if (isOpen(t)) html += textarea('note:' + t.id, boxFor(t), 2);
+    return html + '</div>';
+  }
+  function screenSV() {
+    return pageHead('SV', SV_PAGE.title) +
+      (SV_PAGE.note ? '<p class="note">' + T(SV_PAGE.note) + '</p>' : '') +
+      '<div class="sub">' + threatsFor('SV').map((t, i) => (t.gate ? questionBlock(t, i + 1) : threatCard(t, i + 1))).join('') + '</div>';
+  }
+  function screenOT() {
+    let html = pageHead('OT', OTHER.title) + '<p>' + T(OTHER.question) + '</p>' + guide(OTHER.guidelines) + radios('OT', ['Yes', 'No']);
+    if (val('OT') === 'Yes') html += textarea('OT-which', OTHER.ifYes, 4);
+    return html;
+  }
+  // Under "other approximations": one card per type of validity, with the
+  // question of the paper for that type.
+  function a8Card(type, i) {
+    const v = VALIDITY[type];
+    return '<div class="threat"><h3>' + (i + 1) + '. ' + esc(v.name) + '</h3>' + textarea('note:A8-' + type, v.question, 2) + '</div>';
+  }
+
+  function screenIntro() {
+    return '<h1>' + esc(INTRO.title) + '</h1>' +
+      '<p>' + marks(esc(INTRO.lead)) + '</p>' +
+      '<ul>' + INTRO.bullets.map((b) => '<li>' + marks(b) + '</li>').join('') + '</ul>';
+  }
+  // The glossary page (opened in its own tab with ?glossary): all terms in
+  // alphabetical order with their tooltip text, as plain text.
+  const cap = (k) => k.charAt(0).toUpperCase() + k.slice(1);
+  function screenGlossary() {
+    const keys = Object.keys(GLOSSARY).sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
+    return '<h2>' + esc(GLOSSARY_PAGE.title) + '</h2><dl class="glossary">' +
+      keys.map((k) => '<dt>' + esc(cap(k)) + '</dt><dd>' + esc(GLOSSARY[k]) + '</dd>').join('') + '</dl>';
+  }
+  // The overview after Start: what this checklist is about.
+  // Sections are headings of one level; the subsections of a section (the
+  // research strategies) follow its paragraphs, one level below.
+  function screenAbout() {
+    const paras = (list) => (list || []).map((t) => '<p>' + T(t) + '</p>').join('');
+    return '<p class="kicker">Overview</p><h2>' + esc(ABOUT.title) + '</h2><div class="about">' +
+      ABOUT.sections.map((sec) => '<h3>' + marks(esc(sec.heading)) + '</h3>' + paras(sec.paragraphs) +
+        (sec.subsections || []).map((sub) => '<h4>' + marks(esc(sub.heading)) + '</h4>' + paras(sub.paragraphs)).join('')).join('') + '</div>';
+  }
+  function screenA1() {
+    return pageHead('A1', A1.title) +
+      textarea('A1-rq', A1.rq, 3) +
+      textarea('A1-concl', A1.concl, 3) +
+      guide(A1.guidelines) + example(A1.example);
+  }
+  function screenA(a) {
+    const q = QUESTIONS_A[a];
+    defined(q.defines);
+    let html = pageHead(a, q.question) + '<p>' + T(q.description) + '</p>' + example(q.example) +
+      radios(a, ['Yes', 'No']);
+    if (val(a) === 'Yes') {
+      html += textarea(a + '-which', q.ifYes, 2) + (q.note ? '<p class="note">' + T(q.note) + '</p>' : '');
+      if (a === 'A8') html += '<div class="sub">' + PART_B.map(a8Card).join('') + '</div>';
+      else html += '<div class="sub">' + threatsFor(a).map((t, i) => threatCard(t, i + 1)).join('') + '</div>';
+    }
+    return html;
+  }
+  const MISSING = '<span class="vc No">' + esc(SUMMARY.missing) + '</span>';
+  // A [Yes] / [No] (blue / gray); red [missing] while unanswered.
+  function chipYN(id) { const v = val(id); return v ? '<span class="vc ' + (v === 'Yes' ? 'used' : 'unused') + '">[' + v + ']</span>' : MISSING; }
+  // A free-text answer; red [missing] while empty.
+  const answer = (text) => (text ? '<span class="ans">' + esc(text) + '</span>' : MISSING);
+  const jump = (step, text) => '<button type="button" data-go="' + step + '">' + esc(text) + '</button>';
+  // A row of Part A: id, strategy, [Yes] / [No]; after a [Yes], which experiments on the line below.
+  function boxRow(id, name, chip, note) {
+    return '<div class="row"><span class="id">' + esc(id) + '</span><span class="name">' + jump(id, name) + '</span>' + chip + '</div>' +
+      (note ? '<div class="rownote">' + note + '</div>' : '');
+  }
+  // A question of the pages and its answer: "n. Name [Yes]", the question, the answer.
+  function qa(step, n, name, chip, question, ans) {
+    return '<div class="qa">' + (name ? '<div class="qn">' + (n ? n + '. ' : '') + jump(step, name) + (chip ? ' ' + chip : '') + '</div>' : '') +
+      (question ? '<div class="qq">' + esc(question) + '</div>' : '') + (ans !== null ? '<div>' + ans + '</div>' : '') + '</div>';
+  }
+  function qaThreat(t, i) {
+    if (t.gate) {
+      const g = val('gate:' + t.id);
+      return qa(t.page, i + 1, t.name, chipYN('gate:' + t.id), isOpen(t) ? boxFor(t) : '', isOpen(t) ? answer(val('note:' + t.id)) : null);
+    }
+    return qa(t.page, i + 1, t.name, '', boxFor(t), answer(val('note:' + t.id)));
+  }
+  function screenSummary() {
+    let box = '<div class="box"><div class="title">' + esc(SUMMARY.title) + '</div><div class="body">' +
+      '<p class="rq"><b>Research question</b>' + answer(val('A1-rq')) + '</p>' +
+      '<p class="rq"><b>Conclusions</b>' + answer(val('A1-concl')) + '</p>' +
+      '<div class="h">' + esc(SUMMARY.partA) + '</div>';
+    QUESTIONS.forEach((a) => { box += boxRow(a, BOX_A[a], chipYN(a), val(a) === 'Yes' ? answer(val(a + '-which')) : ''); });
+    box += '<div class="h">' + esc(SUMMARY.partB) + '</div>';
+    QUESTIONS.forEach((a) => {
+      if (val(a) !== 'Yes') return;
+      box += '<div class="block">' + jump(a, BOX_A[a]) + '</div>';
+      if (a === 'A8') { // the boxes per validity type are optional: no [missing] here
+        const filled = PART_B.filter((type) => val('note:A8-' + type));
+        if (!filled.length) box += '<div class="qa muted">—</div>';
+        filled.forEach((type) => { box += qa(a, 0, VALIDITY[type].name, '', VALIDITY[type].question, answer(val('note:A8-' + type))); });
+      } else threatsFor(a).forEach((t, i) => { box += qaThreat(t, i); });
+    });
+    box += '<div class="block">' + jump('SV', SUMMARY.statistical) + '</div>';
+    threatsFor('SV').forEach((t, i) => { box += qaThreat(t, i); });
+    box += '<div class="block">' + jump('OT', SUMMARY.other) + ' ' + chipYN('OT') + '</div>';
+    if (val('OT') === 'Yes') box += qa('OT', 0, '', '', OTHER.ifYes, answer(val('OT-which')));
+    box += '</div></div>';
+    return '<p class="kicker">Summary</p>' + box +
+      '<div class="toolbar"><button type="button" class="primary" id="copy-md">Copy as Markdown</button></div>';
+  }
+
+  // ------------------------------------------------------------------
+  // Export
+  // ------------------------------------------------------------------
+  function markdown() {
+    const miss = SUMMARY.missing;
+    const yn = (id) => (val(id) ? '[' + val(id) + ']' : miss);
+    const ans = (text) => text || miss;
+    const L = ['# ' + SUMMARY.title, '', 'Research question: ' + ans(val('A1-rq')), '', 'Conclusions: ' + ans(val('A1-concl')), '', '## ' + SUMMARY.partA, ''];
+    QUESTIONS.forEach((a) => L.push('- ' + a + ' ' + BOX_A[a] + ' ' + yn(a) + (val(a) === 'Yes' ? ': ' + ans(val(a + '-which')) : '')));
+    L.push('', '## ' + SUMMARY.partB);
+    const threatLines = (t, i) => {
+      const head = (i + 1) + '. ' + t.name;
+      if (t.gate) { L.push(head + ' ' + yn('gate:' + t.id)); if (isOpen(t)) L.push('   ' + plain(boxFor(t)) + ' ' + ans(val('note:' + t.id))); }
+      else L.push(head, '   ' + plain(boxFor(t)) + ' ' + ans(val('note:' + t.id)));
+    };
+    QUESTIONS.forEach((a) => {
+      if (val(a) !== 'Yes') return;
+      L.push('', '### ' + BOX_A[a], '');
+      if (a === 'A8') {
+        PART_B.filter((type) => val('note:A8-' + type)).forEach((type) => L.push('- ' + VALIDITY[type].name + ': ' + val('note:A8-' + type)));
+      } else threatsFor(a).forEach(threatLines);
+    });
+    L.push('', '### ' + SUMMARY.statistical, '');
+    threatsFor('SV').forEach(threatLines);
+    L.push('', '### ' + SUMMARY.other + ' ' + yn('OT'), '');
+    if (val('OT') === 'Yes') L.push(OTHER.ifYes + ' ' + ans(val('OT-which')));
+    return L.join('\n');
+  }
+  function msg(text) { const el = $('#msg'); el.textContent = text; setTimeout(() => { if (el.textContent === text) el.textContent = ''; }, 3000); }
+
+  // ------------------------------------------------------------------
+  // Rendering and navigation
+  // ------------------------------------------------------------------
+  function render(opts) {
+    seenTerms = new Set();
+    const list = steps();
+    const i = currentIndex(list);
+    state.stepIndex = i;
+    const step = list[i];
+    let html;
+    if (step.id === 'intro') html = screenIntro();
+    else if (step.id === 'about') html = screenAbout();
+    else if (step.id === 'A1') html = screenA1();
+    else if (QUESTIONS.includes(step.id)) html = screenA(step.id);
+    else if (step.id === 'SV') html = screenSV();
+    else if (step.id === 'OT') html = screenOT();
+    else html = screenSummary();
+    $('#screen').innerHTML = html;
+    // Boxes can be dragged taller, but not smaller than their initial size.
+    document.querySelectorAll('#screen textarea').forEach((ta) => { ta.style.minHeight = ta.offsetHeight + 'px'; });
+    const page = ORDER.indexOf(step.id) + 1;
+    $('#progress-label').textContent = page ? 'Page ' + page + ' of ' + ORDER.length : '';
+    $('#progress-bar').style.width = Math.round(100 * i / (list.length - 1)) + '%';
+    $('#back').disabled = (i === 0);
+    $('#next').hidden = (step.id === 'summary'); // the summary is the last page
+    $('#next').textContent = step.id === 'intro' ? 'Start' : (i === list.length - 2 ? 'Summary' : 'Next');
+    if (!(opts && opts.keepScroll)) window.scrollTo(0, 0);
+    save();
+  }
+  function go(delta) {
+    const list = steps();
+    const i = currentIndex(list);
+    state.step = list[Math.max(0, Math.min(list.length - 1, i + delta))].id;
+    render();
+  }
+  function goTo(id) { state.step = id; render(); }
+
+  $('#back').addEventListener('click', () => go(-1));
+  $('#next').addEventListener('click', () => go(1));
+
+  // Inputs on the current screen write to the state.
+  $('#screen').addEventListener('input', (ev) => {
+    const el = ev.target;
+    if (el.name && el.tagName === 'TEXTAREA') { state[el.name] = el.value; save(); }
+  });
+  $('#screen').addEventListener('change', (ev) => {
+    const el = ev.target;
+    if (el.type === 'radio' || el.tagName === 'SELECT') {
+      state[el.name] = el.value;
+      save();
+      render({ keepScroll: true }); // unfold or fold the threats; recolor a verdict
+    }
+  });
+  $('#screen').addEventListener('click', async (ev) => {
+    const el = ev.target.closest('button'); if (!el) return;
+    if (el.dataset.go) { goTo(el.dataset.go); return; }
+    if (el.id === 'copy-md') { try { await navigator.clipboard.writeText(markdown()); msg('Copied to the clipboard.'); } catch (e) { msg('Clipboard unavailable; copy the text from the box.'); } }
+  });
+  // Clears all answers and starts again on the first page: "Start over" in the
+  // header on every page, or, without a dialog, opening the page with ?reset.
+  function resetAll(ask) {
+    if (ask && !window.confirm('Clear all answers and start over?')) return;
+    Object.keys(state).forEach((k) => delete state[k]);
+    Object.assign(state, { step: 'intro' });
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
+    render();
+  }
+  $('#reset-top').addEventListener('click', () => resetAll(true));
+
+  // Tooltips for glossary terms (hover, keyboard focus, or tap).
+  const tip = $('#tip');
+  function showTip(el) {
+    tip.textContent = GLOSSARY[el.dataset.term] || '';
+    tip.hidden = false;
+    const r = el.getBoundingClientRect();
+    const w = Math.min(360, window.innerWidth - 24);
+    tip.style.width = w + 'px';
+    let left = r.left + window.scrollX;
+    if (r.left + w > window.innerWidth - 12) left = window.innerWidth - 12 - w + window.scrollX;
+    tip.style.left = Math.max(12, left) + 'px';
+    tip.style.top = (r.bottom + window.scrollY + 6) + 'px';
+  }
+  function hideTip() { tip.hidden = true; }
+  document.addEventListener('mouseover', (ev) => { const t = ev.target.closest && ev.target.closest('.term'); if (t) showTip(t); });
+  document.addEventListener('mouseout', (ev) => { const t = ev.target.closest && ev.target.closest('.term'); if (t) hideTip(); });
+  document.addEventListener('focusin', (ev) => { const t = ev.target.closest && ev.target.closest('.term'); if (t) showTip(t); });
+  document.addEventListener('focusout', (ev) => { const t = ev.target.closest && ev.target.closest('.term'); if (t) hideTip(); });
+  document.addEventListener('click', (ev) => { const t = ev.target.closest && ev.target.closest('.term'); if (t) { if (tip.hidden) showTip(t); else hideTip(); } else if (!tip.hidden) hideTip(); });
+
+  // ?glossary: the glossary alone, in its own tab; it does not touch the saved answers.
+  if (/[?&]glossary\b/.test(window.location.search)) {
+    document.title = GLOSSARY_PAGE.title + ' · ' + document.title;
+    $('#screen').innerHTML = screenGlossary();
+    $('.nav').hidden = true;
+    $('.top .right').hidden = true;
+    $('.bar').hidden = true;
+    return;
+  }
+  if (/[?&]reset\b/.test(window.location.search)) {
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
+    try { window.history.replaceState(null, '', window.location.pathname); } catch (e) { /* ignore */ }
+  }
+  load();
+  render();
+})();
+</script>
+</body>
+</html>
